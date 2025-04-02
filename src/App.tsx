@@ -10,7 +10,9 @@ function App() {
       <div className="app">
         <header className="bg-primary text-white py-3">
           <nav className="container d-flex justify-content-between">
-            <h1 className="h3">CRUD App</h1>
+            <h1 className="h3">
+              <Link className="text-white text-decoration-none" to="/">CRUD App</Link>
+            </h1>
             <ul className="nav">
               <li className="nav-item">
                 <Link className="nav-link text-white" to="/">Strona główna</Link>
