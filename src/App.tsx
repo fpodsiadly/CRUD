@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import AuthorsPage from './pages/AuthorsPage';
 import StatisticsPage from './pages/StatisticsPage';
-import AuthorDetailsPage from './pages/AuthorDetailsPage';
+import AuthorDetailsPage from './pages/AuthorDetailsPage.tsx';
 
 function App() {
   return (
