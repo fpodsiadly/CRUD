@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './AddAuthorModal.css';
 
 interface AddAuthorModalProps {
@@ -8,14 +8,18 @@ interface AddAuthorModalProps {
 }
 
 const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddAuthor }) => {
+    const [name, setName] = useState('');
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+
     if (!isOpen) return null;
 
     const handleAddAuthor = () => {
         const newAuthor = {
             id: Date.now(),
-            name: 'John Doe',
-            username: 'johndoe',
-            email: 'johndoe@example.com',
+            name,
+            username,
+            email,
         };
         onAddAuthor(newAuthor);
         onClose();
@@ -25,6 +29,30 @@ const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddA
         <div className="modal">
             <div className="modal-content">
                 <h2>Dodaj autora</h2>
+                <div className="form-group">
+                    <label>Imię:</label>
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
+                    <label>Nazwa użytkownika:</label>
+                    <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
+                    <label>Email:</label>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
+                </div>
                 <div className="form-actions">
                     <button onClick={handleAddAuthor}>Dodaj autora</button>
                     <button onClick={onClose}>Zamknij</button>
