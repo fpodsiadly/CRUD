@@ -1,22 +1,29 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { fetchAuthorDetails, fetchPostsByAuthor } from '../api';
 import './AuthorDetailsPage.css';
 
-const AuthorDetailsPage = () => {
-    const { id } = useParams();
+const AuthorDetailsPage: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
     const [author, setAuthor] = useState<{ name: string; email: string; website: string } | null>(null);
     const [posts, setPosts] = useState<{ id: number; title: string; body: string }[]>([]);
 
     useEffect(() => {
-        // Fetch author details
-        fetch(`https://jsonplaceholder.typicode.com/users/${id}`)
-            .then((response) => response.json())
-            .then((data) => setAuthor(data));
+        const loadAuthorDetails = async () => {
+            try {
+                if (id) {
+                    const authorData = await fetchAuthorDetails(id);
+                    setAuthor(authorData);
 
-        // Fetch posts by the author
-        fetch(`https://jsonplaceholder.typicode.com/posts?userId=${id}`)
-            .then((response) => response.json())
-            .then((data) => setPosts(data));
+                    const postsData = await fetchPostsByAuthor(id);
+                    setPosts(postsData);
+                }
+            } catch (error) {
+                console.error('Error fetching author details or posts:', error);
+            }
+        };
+
+        loadAuthorDetails();
     }, [id]);
 
     if (!author) {

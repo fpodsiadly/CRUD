@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AddAuthorModal from '../components/AddAuthorModal';
+import { fetchAllAuthors } from '../api';
 
 // Define types for Author and Post
 interface Author {
@@ -20,9 +21,16 @@ const AuthorsPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
-        fetch('https://jsonplaceholder.typicode.com/users')
-            .then((response) => response.json())
-            .then((data) => setAuthors(data));
+        const loadAuthors = async () => {
+            try {
+                const data = await fetchAllAuthors();
+                setAuthors(data);
+            } catch (error) {
+                console.error('Error fetching authors:', error);
+            }
+        };
+
+        loadAuthors();
 
         fetch('https://jsonplaceholder.typicode.com/posts')
             .then((response) => response.json())
