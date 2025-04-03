@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import './AddAuthorModal.css'; // Reusing modal styles
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
+    Button,
+    CircularProgress
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 interface DeleteConfirmationModalProps {
     isOpen: boolean;
@@ -18,8 +27,6 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 }) => {
     const [isDeleting, setIsDeleting] = useState(false);
 
-    if (!isOpen) return null;
-
     const handleConfirm = async () => {
         try {
             setIsDeleting(true);
@@ -33,22 +40,36 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
     };
 
     return (
-        <div className="modal">
-            <div className="modal-content">
-                <h2>{title}</h2>
-                <p className="confirmation-message">{message}</p>
-                <div className="form-actions">
-                    <button
-                        onClick={handleConfirm}
-                        disabled={isDeleting}
-                        className="delete-button"
-                    >
-                        {isDeleting ? 'Deleting...' : 'Delete'}
-                    </button>
-                    <button onClick={onClose}>Cancel</button>
-                </div>
-            </div>
-        </div>
+        <Dialog
+            open={isOpen}
+            onClose={onClose}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+        >
+            <DialogTitle id="alert-dialog-title">
+                {title}
+            </DialogTitle>
+            <DialogContent>
+                <DialogContentText id="alert-dialog-description">
+                    {message}
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onClose} color="inherit" disabled={isDeleting}>
+                    Cancel
+                </Button>
+                <Button
+                    onClick={handleConfirm}
+                    color="error"
+                    variant="contained"
+                    startIcon={isDeleting ? <CircularProgress size={20} color="inherit" /> : <DeleteIcon />}
+                    disabled={isDeleting}
+                    autoFocus
+                >
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                </Button>
+            </DialogActions>
+        </Dialog>
     );
 };
 

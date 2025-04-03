@@ -1,5 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
+import {
+    Typography,
+    Button,
+    Card,
+    CardContent,
+    Box,
+    Pagination,
+    Stack,
+    Divider,
+    IconButton,
+    Link
+} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+
 import AddPostModal from '../components/AddPostModal';
 import EditPostModal from '../components/EditPostModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
@@ -30,7 +46,11 @@ const HomePage = () => {
     const indexOfLastPost = currentPage * postsPerPage;
     const indexOfFirstPost = indexOfLastPost - postsPerPage;
     const currentPosts = posts.slice(indexOfFirstPost, indexOfLastPost);
-    const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+    const pageCount = Math.ceil(posts.length / postsPerPage);
+
+    const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+        setCurrentPage(value);
+    };
 
     const handleAddPost = (newPost: Post) => {
         setPosts([newPost, ...posts]);
@@ -44,7 +64,6 @@ const HomePage = () => {
 
     const handleDeletePost = async () => {
         if (!selectedPost) return;
-
         try {
             await deletePost(selectedPost.id);
             setPosts(posts.filter(post => post.id !== selectedPost.id));
@@ -64,28 +83,33 @@ const HomePage = () => {
     };
 
     return (
-        <div className="container my-4">
-            <h1 className="text-center mb-4">Home Page</h1>
+        <Box>
+            <Typography variant="h4" component="h1" align="center" gutterBottom>
+                Home Page
+            </Typography>
 
-            <div className="text-center mb-3">
-                <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<AddIcon />}
+                    onClick={() => setIsAddModalOpen(true)}
+                >
                     Add New Post
-                </button>
-            </div>
+                </Button>
+            </Box>
 
             <AddPostModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 onAddPost={handleAddPost}
             />
-
             <EditPostModal
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
                 onEditPost={handleEditPost}
                 post={selectedPost}
             />
-
             <DeleteConfirmationModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
@@ -94,48 +118,54 @@ const HomePage = () => {
                 message={`Are you sure you want to delete the post "${selectedPost?.title}"? This action cannot be undone.`}
             />
 
-            <ul className="list-group mb-4">
+            <Stack spacing={2}>
                 {currentPosts.map((post) => (
-                    <li key={post.id} className="list-group-item">
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                            <h2 className="h5 mb-0">{post.title}</h2>
-                            <div>
-                                <button
-                                    className="btn btn-sm btn-outline-primary me-2"
-                                    onClick={() => handleEditClick(post)}
-                                >
-                                    Edit
-                                </button>
-                                <button
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() => handleDeleteClick(post)}
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                        <p>{post.body}</p>
-                        <p className="mb-0">
-                            Author: <Link to={`/authors/${post.userId}`}>User {post.userId}</Link>
-                        </p>
-                    </li>
+                    <Card key={post.id} variant="outlined">
+                        <CardContent>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="h6">{post.title}</Typography>
+                                <Box>
+                                    <IconButton
+                                        size="small"
+                                        color="primary"
+                                        onClick={() => handleEditClick(post)}
+                                        sx={{ mr: 1 }}
+                                    >
+                                        <EditIcon />
+                                    </IconButton>
+                                    <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => handleDeleteClick(post)}
+                                    >
+                                        <DeleteIcon />
+                                    </IconButton>
+                                </Box>
+                            </Box>
+                            <Typography variant="body2" sx={{ mb: 2 }}>
+                                {post.body}
+                            </Typography>
+                            <Divider sx={{ mb: 1 }} />
+                            <Typography variant="body2" color="text.secondary">
+                                Author: <Link component={RouterLink} to={`/authors/${post.userId}`}>User {post.userId}</Link>
+                            </Typography>
+                        </CardContent>
+                    </Card>
                 ))}
-            </ul>
+            </Stack>
 
-            {posts.length > postsPerPage && (
-                <nav>
-                    <ul className="pagination justify-content-center">
-                        {Array.from({ length: Math.ceil(posts.length / postsPerPage) }, (_, i) => (
-                            <li key={i} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
-                                <button className="page-link" onClick={() => paginate(i + 1)}>
-                                    {i + 1}
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                </nav>
+            {pageCount > 1 && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                    <Pagination
+                        count={pageCount}
+                        page={currentPage}
+                        onChange={handlePageChange}
+                        color="primary"
+                        shape="rounded"
+                    />
+                </Box>
             )}
-        </div>
+        </Box>
     );
 };
 

@@ -1,6 +1,21 @@
 import React, { useEffect, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
-import './AddPostModal.css';
+import { useForm, Controller } from 'react-hook-form';
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    Button,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    FormHelperText,
+    Box,
+    CircularProgress,
+    Alert
+} from '@mui/material';
 import { createPost, fetchAllAuthors } from '../api';
 import { Author, Post, NewPost } from '../types/interfaces';
 
@@ -18,11 +33,10 @@ interface PostFormValues {
 
 const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost }) => {
     const {
-        register,
+        control,
         handleSubmit,
         setValue,
         reset,
-        setError,
         formState: { errors, isSubmitting }
     } = useForm<PostFormValues>({
         defaultValues: {
@@ -33,6 +47,7 @@ const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost 
     });
 
     const [authors, setAuthors] = React.useState<Author[]>([]);
+    const [serverError, setServerError] = React.useState<string | null>(null);
 
     // Using useCallback for loadAuthors to prevent infinite rendering
     const loadAuthors = useCallback(async () => {
@@ -45,6 +60,7 @@ const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost 
             }
         } catch (error) {
             console.error('Error loading authors:', error);
+            setServerError('Failed to load authors');
         }
     }, [setValue]);
 
@@ -52,6 +68,7 @@ const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost 
     useEffect(() => {
         if (isOpen) {
             loadAuthors();
+            setServerError(null);
         }
     }, [isOpen, loadAuthors]);
 
@@ -59,10 +76,9 @@ const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost 
     useEffect(() => {
         if (!isOpen) {
             reset();
+            setServerError(null);
         }
     }, [isOpen, reset]);
-
-    if (!isOpen) return null;
 
     const onSubmit = async (data: PostFormValues) => {
         try {
@@ -88,83 +104,128 @@ const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost 
             onClose();
         } catch (error) {
             console.error('Error creating post:', error);
-            setError('root.serverError', {
-                type: 'manual',
-                message: 'An error occurred while adding the post.'
-            });
+            setServerError('An error occurred while adding the post.');
         }
     };
 
+    const handleClose = () => {
+        reset();
+        onClose();
+    };
+
     return (
-        <div className="modal">
-            <div className="modal-content">
-                <h2>Add New Post</h2>
-                {errors.root?.serverError && (
-                    <div className="error-message">{errors.root.serverError.message}</div>
+        <Dialog
+            open={isOpen}
+            onClose={handleClose}
+            fullWidth
+            maxWidth="sm"
+        >
+            <DialogTitle>Add New Post</DialogTitle>
+
+            <DialogContent>
+                {serverError && (
+                    <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>
                 )}
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    <div className="form-group">
-                        <label>Title:<span className="required">*</span></label>
-                        <input
-                            type="text"
-                            className={errors.title ? 'error' : ''}
-                            {...register('title', {
-                                required: 'Title is required',
-                                minLength: {
-                                    value: 3,
-                                    message: 'Title must be at least 3 characters'
-                                }
-                            })}
-                        />
-                        {errors.title && <div className="error-message">{errors.title.message}</div>}
-                    </div>
 
-                    <div className="form-group">
-                        <label>Content:<span className="required">*</span></label>
-                        <textarea
-                            className={errors.body ? 'error' : ''}
-                            rows={5}
-                            {...register('body', {
-                                required: 'Content is required',
-                                minLength: {
-                                    value: 10,
-                                    message: 'Content must be at least 10 characters'
-                                }
-                            })}
-                        ></textarea>
-                        {errors.body && <div className="error-message">{errors.body.message}</div>}
-                    </div>
+                <Box component="form" noValidate sx={{ mt: 1 }}>
+                    <Controller
+                        name="title"
+                        control={control}
+                        rules={{
+                            required: 'Title is required',
+                            minLength: {
+                                value: 3,
+                                message: 'Title must be at least 3 characters'
+                            }
+                        }}
+                        render={({ field }) => (
+                            <TextField
+                                {...field}
+                                margin="normal"
+                                required
+                                fullWidth
+                                id="title"
+                                label="Title"
+                                autoFocus
+                                error={!!errors.title}
+                                helperText={errors.title?.message}
+                            />
+                        )}
+                    />
 
-                    <div className="form-group">
-                        <label>Author:<span className="required">*</span></label>
-                        <select
-                            className={errors.userId ? 'error' : ''}
-                            {...register('userId', {
-                                required: 'Author selection is required'
-                            })}
-                        >
-                            <option value="">Select author</option>
-                            {authors.map(author => (
-                                <option key={author.id} value={author.id}>
-                                    {author.name}
-                                </option>
-                            ))}
-                        </select>
-                        {errors.userId && <div className="error-message">{errors.userId.message}</div>}
-                    </div>
+                    <Controller
+                        name="body"
+                        control={control}
+                        rules={{
+                            required: 'Content is required',
+                            minLength: {
+                                value: 10,
+                                message: 'Content must be at least 10 characters'
+                            }
+                        }}
+                        render={({ field }) => (
+                            <TextField
+                                {...field}
+                                margin="normal"
+                                required
+                                fullWidth
+                                id="body"
+                                label="Content"
+                                multiline
+                                rows={5}
+                                error={!!errors.body}
+                                helperText={errors.body?.message}
+                            />
+                        )}
+                    />
 
-                    <div className="form-actions">
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? 'Adding...' : 'Add'}
-                        </button>
-                        <button type="button" onClick={onClose}>Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                    <Controller
+                        name="userId"
+                        control={control}
+                        rules={{ required: 'Author selection is required' }}
+                        render={({ field }) => (
+                            <FormControl
+                                fullWidth
+                                margin="normal"
+                                required
+                                error={!!errors.userId}
+                            >
+                                <InputLabel id="author-select-label">Author</InputLabel>
+                                <Select
+                                    {...field}
+                                    labelId="author-select-label"
+                                    id="author-select"
+                                    label="Author"
+                                >
+                                    {authors.map(author => (
+                                        <MenuItem key={author.id} value={author.id}>
+                                            {author.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                                {errors.userId && (
+                                    <FormHelperText>{errors.userId.message}</FormHelperText>
+                                )}
+                            </FormControl>
+                        )}
+                    />
+                </Box>
+            </DialogContent>
+
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+                <Button onClick={handleClose} color="inherit">
+                    Cancel
+                </Button>
+                <Button
+                    onClick={handleSubmit(onSubmit)}
+                    variant="contained"
+                    disabled={isSubmitting}
+                    startIcon={isSubmitting && <CircularProgress size={20} />}
+                >
+                    {isSubmitting ? 'Adding...' : 'Add'}
+                </Button>
+            </DialogActions>
+        </Dialog>
     );
 };
 

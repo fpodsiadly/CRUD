@@ -1,6 +1,16 @@
-import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import './AddAuthorModal.css'; // Reusing the same styles
+import React, { useEffect, useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    Button,
+    Box,
+    CircularProgress,
+    Alert
+} from '@mui/material';
 import { updateAuthor } from '../api';
 import { Author } from '../types/interfaces';
 
@@ -25,10 +35,9 @@ const EditAuthorModal: React.FC<EditAuthorModalProps> = ({
     author
 }) => {
     const {
-        register,
+        control,
         handleSubmit,
         reset,
-        setError,
         formState: { errors, isSubmitting }
     } = useForm<AuthorFormValues>({
         defaultValues: {
@@ -39,6 +48,8 @@ const EditAuthorModal: React.FC<EditAuthorModalProps> = ({
         }
     });
 
+    const [serverError, setServerError] = useState<string | null>(null);
+
     // Initialize form with author data when modal opens or author changes
     useEffect(() => {
         if (author) {
@@ -48,10 +59,11 @@ const EditAuthorModal: React.FC<EditAuthorModalProps> = ({
                 email: author.email || '',
                 website: author.website || ''
             });
+            setServerError(null);
         }
     }, [author, reset]);
 
-    if (!isOpen || !author) return null;
+    if (!author) return null;
 
     const onSubmit = async (data: AuthorFormValues) => {
         try {
@@ -76,93 +88,135 @@ const EditAuthorModal: React.FC<EditAuthorModalProps> = ({
             onClose();
         } catch (error) {
             console.error('Error updating author:', error);
-            setError('root.serverError', {
-                type: 'manual',
-                message: 'An error occurred while updating the author.'
-            });
+            setServerError('An error occurred while updating the author.');
         }
     };
 
     return (
-        <div className="modal">
-            <div className="modal-content">
-                <h2>Edit Author</h2>
-                {errors.root?.serverError && (
-                    <div className="error-message">{errors.root.serverError.message}</div>
+        <Dialog
+            open={isOpen}
+            onClose={onClose}
+            fullWidth
+            maxWidth="sm"
+        >
+            <DialogTitle>Edit Author</DialogTitle>
+
+            <DialogContent>
+                {serverError && (
+                    <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>
                 )}
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    <div className="form-group">
-                        <label>Name:<span className="required">*</span></label>
-                        <input
-                            type="text"
-                            className={errors.name ? 'error' : ''}
-                            {...register('name', {
-                                required: 'Name is required'
-                            })}
-                        />
-                        {errors.name && <div className="error-message">{errors.name.message}</div>}
-                    </div>
 
-                    <div className="form-group">
-                        <label>Username:<span className="required">*</span></label>
-                        <input
-                            type="text"
-                            className={errors.username ? 'error' : ''}
-                            {...register('username', {
-                                required: 'Username is required',
-                                minLength: {
-                                    value: 3,
-                                    message: 'Username must be at least 3 characters'
-                                }
-                            })}
-                        />
-                        {errors.username && <div className="error-message">{errors.username.message}</div>}
-                    </div>
+                <Box component="form" noValidate sx={{ mt: 1 }}>
+                    <Controller
+                        name="name"
+                        control={control}
+                        rules={{
+                            required: 'Name is required'
+                        }}
+                        render={({ field }) => (
+                            <TextField
+                                {...field}
+                                margin="normal"
+                                required
+                                fullWidth
+                                id="edit-name"
+                                label="Name"
+                                autoFocus
+                                error={!!errors.name}
+                                helperText={errors.name?.message}
+                            />
+                        )}
+                    />
 
-                    <div className="form-group">
-                        <label>Email:<span className="required">*</span></label>
-                        <input
-                            type="email"
-                            className={errors.email ? 'error' : ''}
-                            {...register('email', {
-                                required: 'Email is required',
-                                pattern: {
-                                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                                    message: 'Please enter a valid email address'
-                                }
-                            })}
-                        />
-                        {errors.email && <div className="error-message">{errors.email.message}</div>}
-                    </div>
+                    <Controller
+                        name="username"
+                        control={control}
+                        rules={{
+                            required: 'Username is required',
+                            minLength: {
+                                value: 3,
+                                message: 'Username must be at least 3 characters'
+                            }
+                        }}
+                        render={({ field }) => (
+                            <TextField
+                                {...field}
+                                margin="normal"
+                                required
+                                fullWidth
+                                id="edit-username"
+                                label="Username"
+                                error={!!errors.username}
+                                helperText={errors.username?.message}
+                            />
+                        )}
+                    />
 
-                    <div className="form-group">
-                        <label>Website:</label>
-                        <input
-                            type="text"
-                            className={errors.website ? 'error' : ''}
-                            placeholder="e.g. example.com"
-                            {...register('website', {
-                                pattern: {
-                                    value: /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/,
-                                    message: 'Please enter a valid website URL'
-                                }
-                            })}
-                        />
-                        {errors.website && <div className="error-message">{errors.website.message}</div>}
-                    </div>
+                    <Controller
+                        name="email"
+                        control={control}
+                        rules={{
+                            required: 'Email is required',
+                            pattern: {
+                                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                message: 'Please enter a valid email address'
+                            }
+                        }}
+                        render={({ field }) => (
+                            <TextField
+                                {...field}
+                                margin="normal"
+                                required
+                                fullWidth
+                                id="edit-email"
+                                label="Email"
+                                type="email"
+                                error={!!errors.email}
+                                helperText={errors.email?.message}
+                            />
+                        )}
+                    />
 
-                    <div className="form-actions">
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? 'Saving...' : 'Save Changes'}
-                        </button>
-                        <button type="button" onClick={onClose}>Cancel</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                    <Controller
+                        name="website"
+                        control={control}
+                        rules={{
+                            pattern: {
+                                value: /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/,
+                                message: 'Please enter a valid website URL'
+                            }
+                        }}
+                        render={({ field }) => (
+                            <TextField
+                                {...field}
+                                margin="normal"
+                                fullWidth
+                                id="edit-website"
+                                label="Website"
+                                placeholder="e.g. example.com"
+                                error={!!errors.website}
+                                helperText={errors.website?.message}
+                            />
+                        )}
+                    />
+                </Box>
+            </DialogContent>
+
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+                <Button onClick={onClose} color="inherit">
+                    Cancel
+                </Button>
+                <Button
+                    onClick={handleSubmit(onSubmit)}
+                    variant="contained"
+                    color="primary"
+                    disabled={isSubmitting}
+                    startIcon={isSubmitting && <CircularProgress size={20} />}
+                >
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                </Button>
+            </DialogActions>
+        </Dialog>
     );
 };
 

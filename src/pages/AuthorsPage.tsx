@@ -1,5 +1,26 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
+import {
+    Typography,
+    Button,
+    Card,
+    CardContent,
+    CardActions,
+    Box,
+    Stack,
+    IconButton,
+    Chip,
+    Avatar,
+    Divider,
+    Grid
+} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import EmailIcon from '@mui/icons-material/Email';
+import PersonIcon from '@mui/icons-material/Person';
+import ArticleIcon from '@mui/icons-material/Article';
+import InfoIcon from '@mui/icons-material/Info';
 import AddAuthorModal from '../components/AddAuthorModal';
 import EditAuthorModal from '../components/EditAuthorModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
@@ -23,9 +44,7 @@ const AuthorsPage = () => {
                 console.error('Error fetching authors:', error);
             }
         };
-
         loadAuthors();
-
         fetch('https://jsonplaceholder.typicode.com/posts')
             .then((response) => response.json())
             .then((data) => setPosts(data));
@@ -57,7 +76,6 @@ const AuthorsPage = () => {
 
     const handleDeleteConfirm = async () => {
         if (!selectedAuthor) return;
-
         try {
             await deleteAuthor(selectedAuthor.id);
             setAuthors(authors.filter(author => author.id !== selectedAuthor.id));
@@ -67,17 +85,21 @@ const AuthorsPage = () => {
     };
 
     return (
-        <div className="container my-4">
-            <h1 className="text-center mb-4">Authors</h1>
+        <Box>
+            <Typography variant="h4" component="h1" align="center" gutterBottom>
+                Authors
+            </Typography>
 
-            <div className="text-center mb-3">
-                <button
-                    className="btn btn-primary"
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<PersonAddIcon />}
                     onClick={() => setIsAddModalOpen(true)}
                 >
                     Add Author
-                </button>
-            </div>
+                </Button>
+            </Box>
 
             <AddAuthorModal
                 isOpen={isAddModalOpen}
@@ -100,36 +122,83 @@ const AuthorsPage = () => {
                 message={`Are you sure you want to delete author ${selectedAuthor?.name}? This action cannot be undone.`}
             />
 
-            <ul className="list-group">
+            <Grid container spacing={3}>
                 {authors.map((author) => (
-                    <li key={author.id} className="list-group-item">
-                        <div className="d-flex justify-content-between align-items-center">
-                            <h2 className="h5">{author.name}</h2>
-                            <div>
-                                <button
-                                    className="btn btn-sm btn-outline-primary me-2"
-                                    onClick={() => handleEditClick(author)}
+                    <Grid item xs={12} sm={6} md={4} key={author.id}>
+                        <Card variant="outlined" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                            <CardContent sx={{ flexGrow: 1 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Avatar sx={{ bgcolor: 'primary.main', mr: 1 }}>
+                                            {author.name.charAt(0)}
+                                        </Avatar>
+                                        <Typography variant="h6">{author.name}</Typography>
+                                    </Box>
+                                    <Box>
+                                        <IconButton
+                                            size="small"
+                                            color="primary"
+                                            onClick={() => handleEditClick(author)}
+                                            sx={{ mr: 0.5 }}
+                                        >
+                                            <EditIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton
+                                            size="small"
+                                            color="error"
+                                            onClick={() => handleDeleteClick(author)}
+                                        >
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                    </Box>
+                                </Box>
+
+                                <Stack spacing={1.5}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <PersonIcon fontSize="small" color="action" sx={{ mr: 1 }} />
+                                        <Typography variant="body2" color="text.secondary">
+                                            Username: {author.username}
+                                        </Typography>
+                                    </Box>
+
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <EmailIcon fontSize="small" color="action" sx={{ mr: 1 }} />
+                                        <Typography variant="body2" color="text.secondary">
+                                            {author.email}
+                                        </Typography>
+                                    </Box>
+
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <ArticleIcon fontSize="small" color="action" sx={{ mr: 1 }} />
+                                        <Chip
+                                            label={`${getPostCount(author.id)} posts`}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                        />
+                                    </Box>
+                                </Stack>
+                            </CardContent>
+
+                            <Divider />
+
+                            <CardActions>
+                                <Button
+                                    component={RouterLink}
+                                    to={`/authors/${author.id}`}
+                                    startIcon={<InfoIcon />}
+                                    size="small"
+                                    color="primary"
+                                    fullWidth
                                 >
-                                    Edit
-                                </button>
-                                <button
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() => handleDeleteClick(author)}
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                        <p>Username: {author.username}</p>
-                        <p>Email: {author.email}</p>
-                        <p>Number of posts: {getPostCount(author.id)}</p>
-                        <Link className="btn btn-link" to={`/authors/${author.id}`}>
-                            Learn more
-                        </Link>
-                    </li>
+                                    Learn more
+                                </Button>
+                            </CardActions>
+                        </Card>
+                    </Grid>
                 ))}
-            </ul>
-        </div>
+            </Grid>
+        </Box>
     );
 };
 
