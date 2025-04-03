@@ -15,13 +15,13 @@ function App() {
             </h1>
             <ul className="nav">
               <li className="nav-item">
-                <Link className="nav-link text-white" to="/">Strona główna</Link>
+                <Link className="nav-link text-white" to="/">Home</Link>
               </li>
               <li className="nav-item">
-                <Link className="nav-link text-white" to="/authors">Autorzy</Link>
+                <Link className="nav-link text-white" to="/authors">Authors</Link>
               </li>
               <li className="nav-item">
-                <Link className="nav-link text-white" to="/statistics">Statystyki</Link>
+                <Link className="nav-link text-white" to="/statistics">Statistics</Link>
               </li>
             </ul>
           </nav>

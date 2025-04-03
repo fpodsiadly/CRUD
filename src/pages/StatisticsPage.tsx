@@ -56,7 +56,7 @@ const StatisticsPage = () => {
         labels: authors.map((author: Author) => author.name), // Explicitly typed author
         datasets: [
             {
-                label: 'Liczba postów',
+                label: 'Number of posts',
                 data: authors.map((author: Author) => getPostCount(author.id)), // Explicitly typed author
                 backgroundColor: 'rgba(75, 192, 192, 0.6)',
                 borderColor: 'rgba(75, 192, 192, 1)',
@@ -67,12 +67,12 @@ const StatisticsPage = () => {
 
     return (
         <div>
-            <h1>Statystyki</h1>
+            <h1>Statistics</h1>
             <table>
                 <thead>
                     <tr>
-                        <th>Łączna liczba postów</th>
-                        <th>Łączna liczba autorów</th>
+                        <th>Total number of posts</th>
+                        <th>Total number of authors</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -82,7 +82,7 @@ const StatisticsPage = () => {
                     </tr>
                 </tbody>
             </table>
-            <h2>Posty na autora</h2>
+            <h2>Posts per author</h2>
             <Bar data={chartData} />
         </div>
     );

@@ -1,15 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import './AddPostModal.css';
-import { createPost, fetchAllAuthors } from '../api';
-import { Author, Post, NewPost } from '../types/interfaces';
+import './AddPostModal.css'; // Reusing the same styles
+import { updatePost, fetchAllAuthors } from '../api';
+import { Author, Post } from '../types/interfaces';
 
-interface AddPostModalProps {
+interface EditPostModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddPost: (post: Post) => void;
+    onEditPost: (post: Post) => void;
+    post: Post | null;
 }
 
-const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost }) => {
+const EditPostModal: React.FC<EditPostModalProps> = ({
+    isOpen,
+    onClose,
+    onEditPost,
+    post
+}) => {
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
     const [userId, setUserId] = useState('');
@@ -17,20 +23,15 @@ const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Using useCallback for loadAuthors to prevent infinite rendering
+    // Load authors - using useCallback
     const loadAuthors = useCallback(async () => {
         try {
             const data = await fetchAllAuthors();
             setAuthors(data);
-
-            // Auto-select the first author if exists and none is selected
-            if (data.length > 0 && !userId) {
-                setUserId(data[0].id.toString());
-            }
         } catch (error) {
             console.error('Error loading authors:', error);
         }
-    }, [userId]);
+    }, []);
 
     // Load authors when modal opens
     useEffect(() => {
@@ -38,6 +39,17 @@ const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost 
             loadAuthors();
         }
     }, [isOpen, loadAuthors]);
+
+    // Initialize form with post data when post changes
+    useEffect(() => {
+        if (post) {
+            setTitle(post.title);
+            setBody(post.body);
+            setUserId(post.userId.toString());
+        }
+    }, [post]);
+
+    if (!isOpen || !post) return null;
 
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
@@ -70,7 +82,7 @@ const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost 
         try {
             setIsSubmitting(true);
 
-            const postData: NewPost = {
+            const postData = {
                 title,
                 body,
                 userId: parseInt(userId)
@@ -78,37 +90,30 @@ const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost 
 
             // In a real app, we would use the API response
             // For JSONPlaceholder, we'll simulate the response
-            const newPost: Post = {
-                id: Date.now(),
+            const updatedPost: Post = {
+                ...post,
                 ...postData
             };
 
             // Call the API
-            await createPost(postData);
+            await updatePost(post.id, postData);
 
-            onAddPost(newPost);
-
-            // Reset form
-            setTitle('');
-            setBody('');
-            setUserId('');
+            onEditPost(updatedPost);
             setErrors({});
 
             onClose();
         } catch (error) {
-            console.error('Error creating post:', error);
-            setErrors({ submit: 'An error occurred while adding the post.' });
+            console.error('Error updating post:', error);
+            setErrors({ submit: 'An error occurred while updating the post.' });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    if (!isOpen) return null;
-
     return (
         <div className="modal">
             <div className="modal-content">
-                <h2>Add New Post</h2>
+                <h2>Edit Post</h2>
 
                 {errors.submit && (
                     <div className="error-message">{errors.submit}</div>
@@ -159,7 +164,7 @@ const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost 
                             type="submit"
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? 'Adding...' : 'Add'}
+                            {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </button>
                         <button type="button" onClick={onClose}>Cancel</button>
                     </div>
@@ -169,4 +174,4 @@ const AddPostModal: React.FC<AddPostModalProps> = ({ isOpen, onClose, onAddPost 
     );
 };
 
-export default AddPostModal;
+export default EditPostModal;

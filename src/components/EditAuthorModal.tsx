@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
-import './AddAuthorModal.css';
-import { createAuthor } from '../api';
-import { Author, NewAuthor } from '../types/interfaces';
+import React, { useState, useEffect } from 'react';
+import './AddAuthorModal.css'; // Reusing the same styles
+import { updateAuthor } from '../api';
+import { Author } from '../types/interfaces';
 
-interface AddAuthorModalProps {
+interface EditAuthorModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAddAuthor: (author: Author) => void;
+    onEditAuthor: (author: Author) => void;
+    author: Author | null;
 }
 
-const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddAuthor }) => {
+const EditAuthorModal: React.FC<EditAuthorModalProps> = ({
+    isOpen,
+    onClose,
+    onEditAuthor,
+    author
+}) => {
     const [name, setName] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -17,7 +23,17 @@ const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddA
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    if (!isOpen) return null;
+    // Initialize form with author data when modal opens or author changes
+    useEffect(() => {
+        if (author) {
+            setName(author.name || '');
+            setUsername(author.username || '');
+            setEmail(author.email || '');
+            setWebsite(author.website || '');
+        }
+    }, [author]);
+
+    if (!isOpen || !author) return null;
 
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
@@ -38,6 +54,7 @@ const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddA
             newErrors.email = 'Please enter a valid email address';
         }
 
+        // Fixed regex for URL validation without unnecessary escape characters
         if (website && !/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(website)) {
             newErrors.website = 'Please enter a valid website URL';
         }
@@ -46,14 +63,14 @@ const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddA
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleAddAuthor = async () => {
+    const handleEditAuthor = async () => {
         if (!validateForm()) return;
 
         try {
             setIsSubmitting(true);
 
             // Prepare the data to be sent
-            const authorData: NewAuthor = {
+            const authorData = {
                 name,
                 username,
                 email,
@@ -61,28 +78,22 @@ const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddA
             };
 
             // In a real app, we would use the API response
-            // For JSONPlaceholder, we'll simulate the response because it doesn't actually create data
-            const newAuthor: Author = {
-                id: Date.now(), // Simulate ID generation
+            // For JSONPlaceholder, we'll simulate the response
+            const updatedAuthor = {
+                ...author,
                 ...authorData
             };
 
             // Call the API
-            await createAuthor(authorData);
+            await updateAuthor(author.id, authorData);
 
-            onAddAuthor(newAuthor);
-
-            // Reset form
-            setName('');
-            setUsername('');
-            setEmail('');
-            setWebsite('');
+            onEditAuthor(updatedAuthor);
             setErrors({});
 
             onClose();
         } catch (error) {
-            console.error('Error creating author:', error);
-            setErrors({ submit: 'An error occurred while adding the author.' });
+            console.error('Error updating author:', error);
+            setErrors({ submit: 'An error occurred while updating the author.' });
         } finally {
             setIsSubmitting(false);
         }
@@ -91,7 +102,7 @@ const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddA
     return (
         <div className="modal">
             <div className="modal-content">
-                <h2>Add Author</h2>
+                <h2>Edit Author</h2>
 
                 {errors.submit && (
                     <div className="error-message">{errors.submit}</div>
@@ -144,10 +155,10 @@ const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddA
 
                 <div className="form-actions">
                     <button
-                        onClick={handleAddAuthor}
+                        onClick={handleEditAuthor}
                         disabled={isSubmitting}
                     >
-                        {isSubmitting ? 'Adding...' : 'Add Author'}
+                        {isSubmitting ? 'Saving...' : 'Save Changes'}
                     </button>
                     <button onClick={onClose}>Cancel</button>
                 </div>
@@ -156,4 +167,4 @@ const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddA
     );
 };
 
-export default AddAuthorModal;
+export default EditAuthorModal;
