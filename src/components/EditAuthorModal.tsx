@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import './AddAuthorModal.css'; // Reusing the same styles
 import { updateAuthor } from '../api';
 import { Author } from '../types/interfaces';
@@ -10,71 +11,56 @@ interface EditAuthorModalProps {
     author: Author | null;
 }
 
+interface AuthorFormValues {
+    name: string;
+    username: string;
+    email: string;
+    website?: string;
+}
+
 const EditAuthorModal: React.FC<EditAuthorModalProps> = ({
     isOpen,
     onClose,
     onEditAuthor,
     author
 }) => {
-    const [name, setName] = useState('');
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [website, setWebsite] = useState('');
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const {
+        register,
+        handleSubmit,
+        reset,
+        setError,
+        formState: { errors, isSubmitting }
+    } = useForm<AuthorFormValues>({
+        defaultValues: {
+            name: '',
+            username: '',
+            email: '',
+            website: ''
+        }
+    });
 
     // Initialize form with author data when modal opens or author changes
     useEffect(() => {
         if (author) {
-            setName(author.name || '');
-            setUsername(author.username || '');
-            setEmail(author.email || '');
-            setWebsite(author.website || '');
+            reset({
+                name: author.name || '',
+                username: author.username || '',
+                email: author.email || '',
+                website: author.website || ''
+            });
         }
-    }, [author]);
+    }, [author, reset]);
 
     if (!isOpen || !author) return null;
 
-    const validateForm = () => {
-        const newErrors: Record<string, string> = {};
-
-        if (!name.trim()) {
-            newErrors.name = 'Name is required';
-        }
-
-        if (!username.trim()) {
-            newErrors.username = 'Username is required';
-        } else if (username.length < 3) {
-            newErrors.username = 'Username must be at least 3 characters';
-        }
-
-        if (!email.trim()) {
-            newErrors.email = 'Email is required';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            newErrors.email = 'Please enter a valid email address';
-        }
-
-        // Fixed regex for URL validation without unnecessary escape characters
-        if (website && !/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(website)) {
-            newErrors.website = 'Please enter a valid website URL';
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleEditAuthor = async () => {
-        if (!validateForm()) return;
-
+    const onSubmit = async (data: AuthorFormValues) => {
         try {
-            setIsSubmitting(true);
-
             // Prepare the data to be sent
             const authorData = {
-                name,
-                username,
-                email,
-                website: website || undefined
+                name: data.name,
+                username: data.username,
+                email: data.email,
+                website: data.website || undefined
             };
 
             // In a real app, we would use the API response
@@ -86,16 +72,14 @@ const EditAuthorModal: React.FC<EditAuthorModalProps> = ({
 
             // Call the API
             await updateAuthor(author.id, authorData);
-
             onEditAuthor(updatedAuthor);
-            setErrors({});
-
             onClose();
         } catch (error) {
             console.error('Error updating author:', error);
-            setErrors({ submit: 'An error occurred while updating the author.' });
-        } finally {
-            setIsSubmitting(false);
+            setError('root.serverError', {
+                type: 'manual',
+                message: 'An error occurred while updating the author.'
+            });
         }
     };
 
@@ -103,65 +87,80 @@ const EditAuthorModal: React.FC<EditAuthorModalProps> = ({
         <div className="modal">
             <div className="modal-content">
                 <h2>Edit Author</h2>
-
-                {errors.submit && (
-                    <div className="error-message">{errors.submit}</div>
+                {errors.root?.serverError && (
+                    <div className="error-message">{errors.root.serverError.message}</div>
                 )}
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <div className="form-group">
+                        <label>Name:<span className="required">*</span></label>
+                        <input
+                            type="text"
+                            className={errors.name ? 'error' : ''}
+                            {...register('name', {
+                                required: 'Name is required'
+                            })}
+                        />
+                        {errors.name && <div className="error-message">{errors.name.message}</div>}
+                    </div>
 
-                <div className="form-group">
-                    <label>Name:<span className="required">*</span></label>
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className={errors.name ? 'error' : ''}
-                    />
-                    {errors.name && <div className="error-message">{errors.name}</div>}
-                </div>
+                    <div className="form-group">
+                        <label>Username:<span className="required">*</span></label>
+                        <input
+                            type="text"
+                            className={errors.username ? 'error' : ''}
+                            {...register('username', {
+                                required: 'Username is required',
+                                minLength: {
+                                    value: 3,
+                                    message: 'Username must be at least 3 characters'
+                                }
+                            })}
+                        />
+                        {errors.username && <div className="error-message">{errors.username.message}</div>}
+                    </div>
 
-                <div className="form-group">
-                    <label>Username:<span className="required">*</span></label>
-                    <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className={errors.username ? 'error' : ''}
-                    />
-                    {errors.username && <div className="error-message">{errors.username}</div>}
-                </div>
+                    <div className="form-group">
+                        <label>Email:<span className="required">*</span></label>
+                        <input
+                            type="email"
+                            className={errors.email ? 'error' : ''}
+                            {...register('email', {
+                                required: 'Email is required',
+                                pattern: {
+                                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                    message: 'Please enter a valid email address'
+                                }
+                            })}
+                        />
+                        {errors.email && <div className="error-message">{errors.email.message}</div>}
+                    </div>
 
-                <div className="form-group">
-                    <label>Email:<span className="required">*</span></label>
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className={errors.email ? 'error' : ''}
-                    />
-                    {errors.email && <div className="error-message">{errors.email}</div>}
-                </div>
+                    <div className="form-group">
+                        <label>Website:</label>
+                        <input
+                            type="text"
+                            className={errors.website ? 'error' : ''}
+                            placeholder="e.g. example.com"
+                            {...register('website', {
+                                pattern: {
+                                    value: /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/,
+                                    message: 'Please enter a valid website URL'
+                                }
+                            })}
+                        />
+                        {errors.website && <div className="error-message">{errors.website.message}</div>}
+                    </div>
 
-                <div className="form-group">
-                    <label>Website:</label>
-                    <input
-                        type="text"
-                        value={website}
-                        onChange={(e) => setWebsite(e.target.value)}
-                        className={errors.website ? 'error' : ''}
-                        placeholder="e.g. example.com"
-                    />
-                    {errors.website && <div className="error-message">{errors.website}</div>}
-                </div>
-
-                <div className="form-actions">
-                    <button
-                        onClick={handleEditAuthor}
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? 'Saving...' : 'Save Changes'}
-                    </button>
-                    <button onClick={onClose}>Cancel</button>
-                </div>
+                    <div className="form-actions">
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Saving...' : 'Save Changes'}
+                        </button>
+                        <button type="button" onClick={onClose}>Cancel</button>
+                    </div>
+                </form>
             </div>
         </div>
     );

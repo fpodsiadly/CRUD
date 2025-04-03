@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useForm } from 'react-hook-form';
 import './AddAuthorModal.css';
 import { createAuthor } from '../api';
 import { Author, NewAuthor } from '../types/interfaces';
@@ -9,55 +10,38 @@ interface AddAuthorModalProps {
     onAddAuthor: (author: Author) => void;
 }
 
+interface AuthorFormValues {
+    name: string;
+    username: string;
+    email: string;
+    website?: string;
+}
+
 const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddAuthor }) => {
-    const [name, setName] = useState('');
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [website, setWebsite] = useState('');
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors, isSubmitting }
+    } = useForm<AuthorFormValues>({
+        defaultValues: {
+            name: '',
+            username: '',
+            email: '',
+            website: ''
+        }
+    });
 
     if (!isOpen) return null;
 
-    const validateForm = () => {
-        const newErrors: Record<string, string> = {};
-
-        if (!name.trim()) {
-            newErrors.name = 'Name is required';
-        }
-
-        if (!username.trim()) {
-            newErrors.username = 'Username is required';
-        } else if (username.length < 3) {
-            newErrors.username = 'Username must be at least 3 characters';
-        }
-
-        if (!email.trim()) {
-            newErrors.email = 'Email is required';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            newErrors.email = 'Please enter a valid email address';
-        }
-
-        if (website && !/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(website)) {
-            newErrors.website = 'Please enter a valid website URL';
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleAddAuthor = async () => {
-        if (!validateForm()) return;
-
+    const onSubmit = async (data: AuthorFormValues) => {
         try {
-            setIsSubmitting(true);
-
             // Prepare the data to be sent
             const authorData: NewAuthor = {
-                name,
-                username,
-                email,
-                website: website || undefined
+                name: data.name,
+                username: data.username,
+                email: data.email,
+                website: data.website || undefined
             };
 
             // In a real app, we would use the API response
@@ -69,22 +53,14 @@ const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddA
 
             // Call the API
             await createAuthor(authorData);
-
             onAddAuthor(newAuthor);
 
             // Reset form
-            setName('');
-            setUsername('');
-            setEmail('');
-            setWebsite('');
-            setErrors({});
-
+            reset();
             onClose();
         } catch (error) {
             console.error('Error creating author:', error);
-            setErrors({ submit: 'An error occurred while adding the author.' });
-        } finally {
-            setIsSubmitting(false);
+            // Błąd można obsłużyć za pomocą setError z react-hook-form
         }
     };
 
@@ -92,65 +68,77 @@ const AddAuthorModal: React.FC<AddAuthorModalProps> = ({ isOpen, onClose, onAddA
         <div className="modal">
             <div className="modal-content">
                 <h2>Add Author</h2>
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <div className="form-group">
+                        <label>Name:<span className="required">*</span></label>
+                        <input
+                            type="text"
+                            className={errors.name ? 'error' : ''}
+                            {...register('name', {
+                                required: 'Name is required'
+                            })}
+                        />
+                        {errors.name && <div className="error-message">{errors.name.message}</div>}
+                    </div>
 
-                {errors.submit && (
-                    <div className="error-message">{errors.submit}</div>
-                )}
+                    <div className="form-group">
+                        <label>Username:<span className="required">*</span></label>
+                        <input
+                            type="text"
+                            className={errors.username ? 'error' : ''}
+                            {...register('username', {
+                                required: 'Username is required',
+                                minLength: {
+                                    value: 3,
+                                    message: 'Username must be at least 3 characters'
+                                }
+                            })}
+                        />
+                        {errors.username && <div className="error-message">{errors.username.message}</div>}
+                    </div>
 
-                <div className="form-group">
-                    <label>Name:<span className="required">*</span></label>
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className={errors.name ? 'error' : ''}
-                    />
-                    {errors.name && <div className="error-message">{errors.name}</div>}
-                </div>
+                    <div className="form-group">
+                        <label>Email:<span className="required">*</span></label>
+                        <input
+                            type="email"
+                            className={errors.email ? 'error' : ''}
+                            {...register('email', {
+                                required: 'Email is required',
+                                pattern: {
+                                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                    message: 'Please enter a valid email address'
+                                }
+                            })}
+                        />
+                        {errors.email && <div className="error-message">{errors.email.message}</div>}
+                    </div>
 
-                <div className="form-group">
-                    <label>Username:<span className="required">*</span></label>
-                    <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className={errors.username ? 'error' : ''}
-                    />
-                    {errors.username && <div className="error-message">{errors.username}</div>}
-                </div>
+                    <div className="form-group">
+                        <label>Website:</label>
+                        <input
+                            type="text"
+                            className={errors.website ? 'error' : ''}
+                            placeholder="e.g. example.com"
+                            {...register('website', {
+                                pattern: {
+                                    value: /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/,
+                                    message: 'Please enter a valid website URL'
+                                }
+                            })}
+                        />
+                        {errors.website && <div className="error-message">{errors.website.message}</div>}
+                    </div>
 
-                <div className="form-group">
-                    <label>Email:<span className="required">*</span></label>
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className={errors.email ? 'error' : ''}
-                    />
-                    {errors.email && <div className="error-message">{errors.email}</div>}
-                </div>
-
-                <div className="form-group">
-                    <label>Website:</label>
-                    <input
-                        type="text"
-                        value={website}
-                        onChange={(e) => setWebsite(e.target.value)}
-                        className={errors.website ? 'error' : ''}
-                        placeholder="e.g. example.com"
-                    />
-                    {errors.website && <div className="error-message">{errors.website}</div>}
-                </div>
-
-                <div className="form-actions">
-                    <button
-                        onClick={handleAddAuthor}
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? 'Adding...' : 'Add Author'}
-                    </button>
-                    <button onClick={onClose}>Cancel</button>
-                </div>
+                    <div className="form-actions">
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Adding...' : 'Add Author'}
+                        </button>
+                        <button type="button" onClick={onClose}>Cancel</button>
+                    </div>
+                </form>
             </div>
         </div>
     );
